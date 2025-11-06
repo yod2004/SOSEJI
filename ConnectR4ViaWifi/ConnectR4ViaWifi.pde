@@ -41,7 +41,7 @@ void draw()
   int high, low;
  
   //100msおきにセンサ値送信を要求
-  if (millis()-t_prev > 100) {
+  if (millis()-t_prev > 1000) {
     t_prev = millis();
 
     //2バイトの値を受信
