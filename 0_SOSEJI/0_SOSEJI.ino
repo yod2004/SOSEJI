@@ -20,7 +20,7 @@ ArduinoLEDMatrix matrix;
 char message[30];
 
 // Network setup
-char SSID[] = "cafe_03_俺以外つなぐな";
+char SSID[] = "cafe_03_つながないで";
 char PASS[] = "123456789";
 byte IP[] = { 192, 48, 56, 1 };
 int PORT = 80;
@@ -124,68 +124,6 @@ void _2_CHANGE(){
   }
 }
 
-// void _1A_CHANGE() {
-//   if (digitalRead(enc1a) == HIGH) { //RISING
-//     if (digitalRead(enc1b) == HIGH) {
-//       count1--;
-//     } else {
-//       count1++;
-//     }
-//   } else { //FALLING
-//     if (digitalRead(enc1b) == HIGH) {
-//       count1++;
-//     } else {
-//       count1--;
-//     }
-//   }
-// }
-
-// void _1B_CHANGE() {
-//   if (digitalRead(enc1b) == HIGH) { //RISING
-//     if (digitalRead(enc1a) == HIGH) {
-//       count1--;
-//     } else {
-//       count1++;
-//     }
-//   } else { //FALLING
-//     if (digitalRead(enc1a) == HIGH) {
-//       count1++;
-//     } else {
-//       count1--;
-//     }
-//   }
-// }
-// void _2A_CHANGE() {
-//   if (digitalRead(enc2a) == HIGH) { //RISING
-//     if (digitalRead(enc2b) == HIGH) {
-//       count2--;
-//     } else {
-//       count2++;
-//     }
-//   } else { //FALLING
-//     if (digitalRead(enc2b) == HIGH) {
-//       count2++;
-//     } else {
-//       count2--;
-//     }
-//   }
-// }
-
-// void _2B_CHANGE() {
-//   if (digitalRead(enc2b) == HIGH) { //RISING
-//     if (digitalRead(enc2a) == HIGH) {
-//       count2--;
-//     } else {
-//       count2++;
-//     }
-//   } else { //FALLING
-//     if (digitalRead(enc2a) == HIGH) {
-//       count2++;
-//     } else {
-//       count2--;
-//     }
-//   }
-// }
 
 void setup() {
   // put your setup code here, to run once:
@@ -264,10 +202,12 @@ void loop() {
           
           // ★★★重要(A)★★★
           // MoveMotorに渡す値を -128〜127 の範囲に収める (オーバーフロー防止)
-          MoveMotor(1, constrain(153 - count1, -128, 127)); 
-          MoveMotor(2, constrain(153 - count2, -128, 127));
+          torque1 = constrain(-20 + 2*(-153 - count1), -128, 127);
+          torque2 = constrain(-20 + 2*(-153 - count2), -128, 127);
+          MoveMotor(1, torque1); 
+          MoveMotor(2, torque2);
           
-          if (count1 > 450 && count2 > 450) {
+          if (count1 < -153 && count2 < -153) {
             stage = Back;
           }
           sprintf(message, "Push");
@@ -283,10 +223,12 @@ void loop() {
 
           // ★★★重要(A)★★★
           // MoveMotorに渡す値を -128〜127 の範囲に収める (オーバーフロー防止)
-          MoveMotor(1, constrain(127 - count1, -128, 127));
-          MoveMotor(2, constrain(127 - count2, -128, 127));
+          torque1 = constrain(20 + 2*(-127 - count1), -128, 127);
+          torque2 = constrain(20 + 2*(-127 - count2), -128, 127);
+          MoveMotor(1, torque1);
+          MoveMotor(2, torque2);
           
-          if (count1 < 127 && count2 < 127) {
+          if (count1 > -127 && count2 > -127) {
             stage = RotateRight;
           }
           sprintf(message, "Back");
@@ -295,9 +237,11 @@ void loop() {
         }
         
         case RotateRight:
-          MoveMotor(1,constrain(147 - count1, -128, 127));
-          MoveMotor(2,constrain(107 - count2, -128, 127));
-          if(count1 > 147 && count2 < 107){
+          torque1 = constrain(20 + 2*(-107 - count1), -128, 127);
+          torque2 = constrain(-20 + 2*(-147 - count2), -128, 127);
+          MoveMotor(1,torque1);
+          MoveMotor(2,torque2);
+          if(count1 > -107 && count2 < -147){
             stage = CatchCup1;
           }
           sprintf(message, "RoR");
@@ -317,9 +261,9 @@ void loop() {
           break;
         
         case RotateLeft:
-          MoveMotor(1,constrain(107 - count1, -128, 127));
-          MoveMotor(2,constrain(147 - count2, -128, 127));
-          if(count1 < 107 && count2 > 147){
+          MoveMotor(1,constrain(-20 + 2*(-147 - count1), -128, 127));
+          MoveMotor(2,constrain(20 + 2*(-107 - count2), -128, 127));
+          if(count1 < -147 && count2 > -107){
             stage = CatchCup2;
           }
           sprintf(message, "RoL");
@@ -340,6 +284,13 @@ void loop() {
         
         case ReturnManual:
           isAutoMode = false;
+          sprintf(message, "Man");
+          torque1 = 0;
+          torque2 = 0;
+          MoveMotor(1,torque1);
+          MoveMotor(2,torque2);
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
           break;
 
         default:
@@ -442,6 +393,11 @@ void loop() {
 
       case 't':
         isAutoMode = true;
+        stage = Push2Cups;
+        torque1 = 0;
+        torque2 = 0;
+        count1 = 0;
+        count2 = 0;
         break;
 
       default:
