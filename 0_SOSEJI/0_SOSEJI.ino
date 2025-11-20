@@ -123,10 +123,11 @@ void _2_CHANGE(){
 }
 
 bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の目標，カウント2の目標，pゲイン
-  bool dir1 = (targetCount1 > count1) ? true : false;
-  bool dir2 = (targetCount2 > count2) ? true : false;
+  int8_t dir1 = (targetCount1 > count1) ? 1 : -1;
+  int8_t dir2 = (targetCount2 > count2) ? 1 : -1;
   MoveMotor(1, constrain(dir1 * 20 + kp*(targetCount1 - count1),-127,127)); 
-  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));     
+  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));
+  
   if (count1 == targetCount1 && count2 == targetCount2) {
     return true;
   }else{
@@ -202,10 +203,13 @@ void loop() {
       switch (stage) { //モーターの出力を決める
         case Push2Cups:
         {
-          MoveMotor(1, constrain(-20 + 2*(-153 - count1),-127,127)); 
-          MoveMotor(2, constrain(-20 + 2*(-153 - count2),-127,127));
+          // MoveMotor(1, constrain(-20 + 2*(-153 - count1),-127,127)); 
+          // MoveMotor(2, constrain(-20 + 2*(-153 - count2),-127,127));
           
-          if (count1 < -153 && count2 < -153) {
+          // if (count1 < -153 && count2 < -153) {
+          //   stage = Back;
+          // }
+          if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
             stage = Back;
           }
           sprintf(message, "Push");
@@ -216,10 +220,13 @@ void loop() {
 
         case Back:
         {
-          MoveMotor(1, constrain(20 + 2*(-127 - count1),-127,127));
-          MoveMotor(2, constrain(20 + 2*(-127 - count2),-127,127));
+          // MoveMotor(1, constrain(20 + 2*(-127 - count1),-127,127));
+          // MoveMotor(2, constrain(20 + 2*(-127 - count2),-127,127));
           
-          if (count1 > -127 && count2 > -127) {
+          // if (count1 > -127 && count2 > -127) {
+          //   stage = RotateRight;
+          // }
+          if(autoMove(-127,-127,2)){
             stage = RotateRight;
           }
           sprintf(message, "Back");
@@ -228,9 +235,12 @@ void loop() {
         }
         
         case RotateRight:
-          MoveMotor(1, constrain(20 + 2*(-107 - count1),-127,127));
-          MoveMotor(2, constrain(-20 + 2*(-147 - count2),-127,127));
-          if(count1 > -107 && count2 < -147){
+          // MoveMotor(1, constrain(20 + 2*(-107 - count1),-127,127));
+          // MoveMotor(2, constrain(-20 + 2*(-147 - count2),-127,127));
+          // if(count1 > -107 && count2 < -147){
+          //   stage = CatchCup1;
+          // }
+          if(autoMove(-107,-147,2)){
             stage = CatchCup1;
           }
           sprintf(message, "RoR");
@@ -250,9 +260,12 @@ void loop() {
           break;
         
         case RotateLeft:
-          MoveMotor(1,constrain(-20 + 2*(-147 - count1), -127, 127));
-          MoveMotor(2,constrain(20 + 2*(-107 - count2), -127, 127));
-          if(count1 < -147 && count2 > -107){
+          // MoveMotor(1,constrain(-20 + 2*(-147 - count1), -127, 127));
+          // MoveMotor(2,constrain(20 + 2*(-107 - count2), -127, 127));
+          // if(count1 < -147 && count2 > -107){
+          //   stage = CatchCup2;
+          // }
+          if(autoMove(-147,-107,2)){
             stage = CatchCup2;
           }
           sprintf(message, "RoL");
