@@ -75,6 +75,20 @@ enum STAGE{//自立制御時の段階を設定
 };
 STAGE stage = Push2Cups;
 
+enum STAGE_MID{
+  rotL,
+  back15,
+  rotR,
+  back60,
+  go60,
+  rotR2,
+  back30,
+  rotL2,
+  back60_2,
+  returnManual
+};
+STAGE_MID stageMid = rotL;
+
 //モジュールに関する関数
 void MoveMotor(int id,int8_t torque){//-128 < torwue < 127
   // constrain(torque, -127, 127);
@@ -188,6 +202,7 @@ void loop() {
         LED_print(0, 1, message, NO_SCROLL);
         // return; // ★重要: このloopはここで終了。次のloopから手動モードに入る。
         stage = ReturnManual;
+        stageMid = returnManual;
       }else if(c == 'U'){  
         value = analogRead(thermister);
         client.write(highByte(value)); //上位バイト
@@ -195,11 +210,92 @@ void loop() {
       }
       // 'y' 以外の文字（改行コードなど）は読み捨てられ、無視される
     }
-//     if(isAutoMode == false){
-//       return;
-//     }else{
-        // 2. 'y'が押されていなかった場合、自動制御(switch)を実行する
-      // (注：client.available() <= 0 の場合も、こちらが実行されます)
+      switch(stageMid){
+        case rotL:
+          if(autoMove(-20,20,2)){
+            stageMid = back15;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+        
+        case back15:
+          if(autoMove(-58.0, -18.0,2)){
+            stageMid = rotR;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case rotR:
+          if(autoMove(-38.0, -38.0,2)){
+            stageMid = back60;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+        
+        case back60:
+          if(autoMove(-215.2, -215.2,2)){
+            stageMid = go60;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case go60:
+          if(autoMove(-38.0, -38.0,2)){
+            stageMid = rotR2;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+        
+        case rotR2:
+          if(autoMove(-18.0, -58.0,2)){
+            stageMid = back30;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+        
+        case back30:
+          if(autoMove(-93.9, -133.9,2)){
+            stageMid = rotL2;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case rotL2:
+          if(autoMove(-113.9, -113.9,2)){
+            stageMid = back60_2;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case back60_2:
+          if(autoMove(-291.1, -291.1,2)){
+            stageMid = returnManual;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case returnManual:
+          isAutoMode = false;
+          sprintf(message, "Man");
+          MoveMotor(1,0);
+          MoveMotor(2,0);
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        default:
+          isAutoMode = false;
+          break;
+      }
+      /*
       switch (stage) { //モーターの出力を決める
         case Push2Cups:
         {
@@ -291,13 +387,14 @@ void loop() {
           MoveMotor(2,0);
           LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
           break;
-          break;
 
         default:
           isAutoMode = false;
           break;
       }
+      */
     // }
+    
   }else{//手動モード
     if (client.available() <= 0) {
       return;  // データが来なかったらなにもしない
@@ -394,6 +491,7 @@ void loop() {
       case 't':
         isAutoMode = true;
         stage = Push2Cups;
+        stageMid = rotL;
         torque1 = 0;
         torque2 = 0;
         count1 = 0;
