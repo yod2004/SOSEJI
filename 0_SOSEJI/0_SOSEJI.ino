@@ -77,9 +77,7 @@ STAGE stage = Push2Cups;
 
 //モジュールに関する関数
 void MoveMotor(int id,int8_t torque){//-128 < torwue < 127
-  if(torque == -128){
-    torque = -127;
-  }
+  // constrain(torque, -127, 127);
   if(id == 1){//1つ目のモーターを動かす
     torque1 = torque;
     if(torque >= 0){//トルクが正のとき
@@ -124,6 +122,17 @@ void _2_CHANGE(){
   }
 }
 
+bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の目標，カウント2の目標，pゲイン
+  bool dir1 = (targetCount1 > count1) ? true : false;
+  bool dir2 = (targetCount2 > count2) ? true : false;
+  MoveMotor(1, constrain(dir1 * 20 + kp*(targetCount1 - count1),-127,127)); 
+  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));     
+  if (count1 == targetCount1 && count2 == targetCount2) {
+    return true;
+  }else{
+    return false;
+  }
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -137,10 +146,6 @@ void setup() {
   pinMode(thermister,INPUT);
   pinMode(trig,OUTPUT);
   pinMode(echo,INPUT);
-  // attachInterrupt(digitalPinToInterrupt(enc1a), _1A_CHANGE, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(enc1b), _1B_CHANGE, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(enc2a), _2A_CHANGE, CHANGE);
-  // attachInterrupt(digitalPinToInterrupt(enc2b), _2B_CHANGE, CHANGE);
   attachInterrupt(digitalPinToInterrupt(enc1), _1_CHANGE, CHANGE);
   attachInterrupt(digitalPinToInterrupt(enc2), _2_CHANGE, CHANGE);
   servo1.attach(servo1_pin, 500, 2400);
@@ -196,16 +201,9 @@ void loop() {
       // (注：client.available() <= 0 の場合も、こちらが実行されます)
       switch (stage) { //モーターの出力を決める
         case Push2Cups:
-        { // 変数宣言のためにスコープ { } を追加
-          // int torque1 = 450 - count1; // P制御の計算
-          // int torque2 = 450 - count2; // P制御の計算
-          
-          // ★★★重要(A)★★★
-          // MoveMotorに渡す値を -128〜127 の範囲に収める (オーバーフロー防止)
-          torque1 = constrain(-20 + 2*(-153 - count1), -128, 127);
-          torque2 = constrain(-20 + 2*(-153 - count2), -128, 127);
-          MoveMotor(1, torque1); 
-          MoveMotor(2, torque2);
+        {
+          MoveMotor(1, constrain(-20 + 2*(-153 - count1),-127,127)); 
+          MoveMotor(2, constrain(-20 + 2*(-153 - count2),-127,127));
           
           if (count1 < -153 && count2 < -153) {
             stage = Back;
@@ -217,16 +215,9 @@ void loop() {
         }
 
         case Back:
-        { // スコープ { } を追加
-          // int torque1 = count1 - 200; // P制御の計算
-          // int torque2 = count2 - 200; // P制御の計算
-
-          // ★★★重要(A)★★★
-          // MoveMotorに渡す値を -128〜127 の範囲に収める (オーバーフロー防止)
-          torque1 = constrain(20 + 2*(-127 - count1), -128, 127);
-          torque2 = constrain(20 + 2*(-127 - count2), -128, 127);
-          MoveMotor(1, torque1);
-          MoveMotor(2, torque2);
+        {
+          MoveMotor(1, constrain(20 + 2*(-127 - count1),-127,127));
+          MoveMotor(2, constrain(20 + 2*(-127 - count2),-127,127));
           
           if (count1 > -127 && count2 > -127) {
             stage = RotateRight;
@@ -237,10 +228,8 @@ void loop() {
         }
         
         case RotateRight:
-          torque1 = constrain(20 + 2*(-107 - count1), -128, 127);
-          torque2 = constrain(-20 + 2*(-147 - count2), -128, 127);
-          MoveMotor(1,torque1);
-          MoveMotor(2,torque2);
+          MoveMotor(1, constrain(20 + 2*(-107 - count1),-127,127));
+          MoveMotor(2, constrain(-20 + 2*(-147 - count2),-127,127));
           if(count1 > -107 && count2 < -147){
             stage = CatchCup1;
           }
@@ -261,8 +250,8 @@ void loop() {
           break;
         
         case RotateLeft:
-          MoveMotor(1,constrain(-20 + 2*(-147 - count1), -128, 127));
-          MoveMotor(2,constrain(20 + 2*(-107 - count2), -128, 127));
+          MoveMotor(1,constrain(-20 + 2*(-147 - count1), -127, 127));
+          MoveMotor(2,constrain(20 + 2*(-107 - count2), -127, 127));
           if(count1 < -147 && count2 > -107){
             stage = CatchCup2;
           }
@@ -285,10 +274,8 @@ void loop() {
         case ReturnManual:
           isAutoMode = false;
           sprintf(message, "Man");
-          torque1 = 0;
-          torque2 = 0;
-          MoveMotor(1,torque1);
-          MoveMotor(2,torque2);
+          MoveMotor(1,0);
+          MoveMotor(2,0);
           LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
           break;
           break;
