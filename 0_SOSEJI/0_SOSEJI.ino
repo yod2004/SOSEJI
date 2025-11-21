@@ -15,19 +15,19 @@
 #include "Arduino_LED_Matrix.h"
 #include <Servo.h>
 
-//LED setup
+//LEDマトリクスを使うためにインスタンス化
 ArduinoLEDMatrix matrix;
 char message[30];
 
-// Network setup
-char SSID[] = "cafe_03_つながないで";
+// ネットワークの準備
+char SSID[] = "cafe_03_とっとこ菊太郎";
 char PASS[] = "123456789";
 byte IP[] = { 192, 48, 56, 1 };
 int PORT = 80;
 int status = WL_IDLE_STATUS;
 WiFiServer server(PORT);  //Arduino上のサーバの設定
 
-//Servo setup
+//サーボの準備
 Servo servo1;
 Servo servo2;
 
@@ -41,10 +41,6 @@ int pwmb = 6;
 int servo1_pin = 9;
 int servo2_pin = 10;
 int thermister = A0;
-// int enc1a = A1;
-// int enc1b = A2;
-// int enc2a = A3;
-// int enc2b = A4;
 int enc1 = A1;
 int enc2 = A2;
 int trig = 12;
@@ -53,9 +49,9 @@ int8_t torque1 = 0;//128~127
 int8_t torque2 = 0;//128~127
 
 //変数
-volatile int count1 = 0;
-volatile int count2 = 0;
-bool isAutoMode = false;
+volatile int count1 = 0;//タイヤ1のエンコーダーのカウント
+volatile int count2 = 0;//タイヤ2のエンコーダーのカウント
+bool isAutoMode = false;//オートモードかどうか
 
 // Communication setup
 char c = '.';
@@ -75,7 +71,7 @@ enum STAGE{//自立制御時の段階を設定
 };
 STAGE stage = Push2Cups;
 
-enum STAGE_MID{
+enum STAGE_MID{//自律制御時の段階を設定(中間競技用)
   rotL,
   back15,
   rotR,
@@ -90,60 +86,59 @@ enum STAGE_MID{
 };
 STAGE_MID stageMid = rotL;
 
-//モジュールに関する関数
-void MoveMotor(int id,int8_t torque){//-128 < torwue < 127
-  // constrain(torque, -127, 127);
-  if(id == 1){//1つ目のモーターを動かす
-    torque1 = torque;
+//モーターを動かす関数 idとトルクを指定できる
+void MoveMotor(int id,int8_t torque){//torqueは-127~127の範囲で送られてくる.
+  if(id == 1){//idが1なら1つ目のモーターを動かす
+    torque1 = torque;//エンコーダー1がタイヤ1の回転方向を知れるように，torque1にtorqueを代入
     if(torque >= 0){//トルクが正のとき
       digitalWrite(ain1,HIGH);
       digitalWrite(ain2,LOW);
-      analogWrite(pwma,torque*2);//analogWriteは0~255
+      analogWrite(pwma,torque*2);//analogWriteは0~255の範囲を受け付けるのでtorqueを2倍する
     }
     if(torque < 0){//トルクが負のとき
       digitalWrite(ain1,LOW);
       digitalWrite(ain2,HIGH);
-      analogWrite(pwma,-1 * torque*2);//analogWriteは0~255
+      analogWrite(pwma,-1 * torque*2);//analogWriteは0~255の範囲を受け付けるのでtorqueを2倍する
     }
   }
-  if(id == 2){//1つ目のモーターを動かす
-    torque2 = torque;
+  if(id == 2){//idが2なら2つ目のモーターを動かす
+    torque2 = torque;//エンコーダー2がタイヤ2の回転方向を知れるように，torque2にtorqueを代入
     if(torque >= 0){//トルクが正のとき
       digitalWrite(bin1,HIGH);
       digitalWrite(bin2,LOW);
-      analogWrite(pwmb,torque*2);
+      analogWrite(pwmb,torque*2);//analogWriteは0~255の範囲を受け付けるのでtorqueを2倍する
     }
     if(torque < 0){//トルクが負のとき
       digitalWrite(bin1,LOW);
       digitalWrite(bin2,HIGH);
-      analogWrite(pwmb,-1 * torque*2);
+      analogWrite(pwmb,-1 * torque*2);//analogWriteは0~255の範囲を受け付けるのでtorqueを2倍する
     }
   }
 }
 
-void _1_CHANGE(){
+void _1_CHANGE(){//エンコーダー1が変わったときに実行される関数
   if(torque1 > 0){
-    count1 ++;
+    count1 ++;//現在のモーター1のトルクが正ならcount1を1増やす
   }else{
-    count1 --;
+    count1 --;//現在のモーター1のトルクが負ならcount1を1減らす
   }
 }
 
-void _2_CHANGE(){
+void _2_CHANGE(){//エンコーダー2が変わったときに実行される関数
   if(torque2 > 0){
-    count2 ++;
+    count2 ++;//現在のモーター2のトルクが正ならcount2を1増やす
   }else{
-    count2 --;
+    count2 --;//現在のモーター2のトルクが負ならcount2を1減らす
   }
 }
 
 bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の目標，カウント2の目標，pゲイン
-  int8_t dir1 = (targetCount1 > count1) ? 1 : -1;
-  int8_t dir2 = (targetCount2 > count2) ? 1 : -1;
-  MoveMotor(1, constrain(dir1 * 20 + kp*(targetCount1 - count1),-127,127)); 
-  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));
+  int8_t dir1 = (targetCount1 > count1) ? 1 : -1;//タイヤ1が前に進むべきなら1，後ろに進むべきなら-1にする
+  int8_t dir2 = (targetCount2 > count2) ? 1 : -1;//タイヤ2が前に進むべきなら1，後ろに進むべきなら-1にする
+  MoveMotor(1, constrain(dir1 * 20 + kp*(targetCount1 - count1),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
+  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   
-  if (count1 == targetCount1 && count2 == targetCount2) {
+  if (count1 == targetCount1 && count2 == targetCount2) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
     return true;
   }else{
     return false;
@@ -192,8 +187,7 @@ void loop() {
   }
   Serial.print(count1);Serial.print(" ");Serial.println(count2);
   if(isAutoMode == true){
-// // 1. まずクライアントからの入力をチェック (最優先)
-    if (client.available() > 0) {
+    if (client.available() > 0) {//まずクライアントからの入力をチェック
       c = client.read();
       if (c == 'y') { // 'y' が押されたら
         isAutoMode = false;      // 手動モードに戻す
@@ -201,109 +195,107 @@ void loop() {
         MoveMotor(2, 0);
         sprintf(message, "Manual"); // 手動モードになったことを表示
         LED_print(0, 1, message, NO_SCROLL);
-        // return; // ★重要: このloopはここで終了。次のloopから手動モードに入る。
         stage = ReturnManual;
         stageMid = returnManual;
-      }else if(c == 'U'){  
+      }else if(c == 'U'){
         value = analogRead(thermister);
         client.write(highByte(value)); //上位バイト
         client.write(lowByte(value));  //下位バイト
       }
-      // 'y' 以外の文字（改行コードなど）は読み捨てられ、無視される
     }
-      switch(stageMid){
-        case rotL:
-          if(autoMove(-20,20,2)){
-            stageMid = back15;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        
-        case back15:
-          if(autoMove(-58.0, -18.0,2)){
-            stageMid = rotR;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+    switch(stageMid){//stageMidの状態によって場合分けをする
+      case rotL://もしstageMidがrotLだったら実行
+        if(autoMove(-20,20,2)){//エンコーダーのカウントが-20,20になるように司令を送る．　目標を達成したらif文の中に入る
+          stageMid = back15;//stageMidを次の段階に進める．
+        }
+        sprintf(message, "rL");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      
+      case back15://もしstageMidがback15だったら実行
+        if(autoMove(-58.0, -18.0,2)){
+          stageMid = rotR;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case rotR:
-          if(autoMove(-38.0, -38.0,2)){
-            stageMid = back60;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        
-        case back60:
-          if(autoMove(-215.2, -215.2,2)){
-            stageMid = go60;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case rotR://もしstageMidがrotRだったら実行
+        if(autoMove(-38.0, -38.0,2)){
+          stageMid = back60;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      
+      case back60:
+        if(autoMove(-215.2, -215.2,2)){
+          stageMid = go60;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case go60:
-          if(autoMove(-38.0, -38.0,2)){
-            stageMid = rotR2;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        
-        case rotR2:
-          if(autoMove(-18.0, -58.0,2)){
-            stageMid = back30;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        
-        case back30:
-          if(autoMove(-106.6, -146.6,2)){
-            stageMid = rotL2;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case go60:
+        if(autoMove(-38.0, -38.0,2)){
+          stageMid = rotR2;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      
+      case rotR2:
+        if(autoMove(-18.0, -58.0,2)){
+          stageMid = back30;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      
+      case back30:
+        if(autoMove(-106.6, -146.6,2)){
+          stageMid = rotL2;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case rotL2:
-          if(autoMove(-131.6, -121.6,2)){
-            stageMid = back60_2;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case rotL2:
+        if(autoMove(-131.6, -121.6,2)){
+          stageMid = back60_2;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case back60_2:
-          if(autoMove(-308.8, -298.8,2)){
-            stageMid = go10;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case back60_2:
+        if(autoMove(-308.8, -298.8,2)){
+          stageMid = go10;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case go10:
-          if(autoMove(-258.8, -248.8,2)){
-            stageMid = returnManual;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case go10:
+        if(autoMove(-258.8, -248.8,2)){
+          stageMid = returnManual;
+        }
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        case returnManual:
-          isAutoMode = false;
-          sprintf(message, "Man");
-          MoveMotor(1,0);
-          MoveMotor(2,0);
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
+      case returnManual:
+        isAutoMode = false;
+        sprintf(message, "Man");
+        MoveMotor(1,0);
+        MoveMotor(2,0);
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
 
-        default:
-          isAutoMode = false;
-          break;
-      }
+      default:
+        isAutoMode = false;
+        break;
+    }
       /*
       switch (stage) { //モーターの出力を決める
         case Push2Cups:
