@@ -85,6 +85,7 @@ enum STAGE_MID{
   back30,
   rotL2,
   back60_2,
+  go10,
   returnManual
 };
 STAGE_MID stageMid = rotL;
@@ -260,7 +261,7 @@ void loop() {
           break;
         
         case back30:
-          if(autoMove(-93.9, -133.9,2)){
+          if(autoMove(-106.6, -146.6,2)){
             stageMid = rotL2;
           }
           sprintf(message, "Push");
@@ -268,7 +269,7 @@ void loop() {
           break;
 
         case rotL2:
-          if(autoMove(-113.9, -113.9,2)){
+          if(autoMove(-131.6, -121.6,2)){
             stageMid = back60_2;
           }
           sprintf(message, "Push");
@@ -276,7 +277,15 @@ void loop() {
           break;
 
         case back60_2:
-          if(autoMove(-291.1, -291.1,2)){
+          if(autoMove(-308.8, -298.8,2)){
+            stageMid = go10;
+          }
+          sprintf(message, "Push");
+          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+          break;
+
+        case go10:
+          if(autoMove(-258.8, -248.8,2)){
             stageMid = returnManual;
           }
           sprintf(message, "Push");
