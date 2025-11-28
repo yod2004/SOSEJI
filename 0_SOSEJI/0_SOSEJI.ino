@@ -129,10 +129,11 @@ float getDistance(){
 
   // echoピンがHIGHになっている時間を計測（単位：マイクロ秒）
   // 第3引数はタイムアウト設定（ここでは30ms = 約5mまで）
-  unsigned long duration = pulseIn(echo, HIGH, 100);
+  unsigned long duration = pulseIn(echo, HIGH, 30000);
 
   // 計測できなかった場合（タイムアウト時）は -1 を返すなどの処理
   if (duration == 0) {
+    Serial.println("time out");
     return -1.0; 
   }
 
@@ -140,6 +141,7 @@ float getDistance(){
   // 音速 340m/s = 0.034cm/us
   // 往復なので2で割る: 0.034 / 2 = 0.017
   float distance = duration * 0.017;
+  Serial.println(distance);
   return distance;
 }
 
@@ -162,8 +164,8 @@ void _2_CHANGE(){//エンコーダー2が変わったときに実行される関
 bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の目標，カウント2の目標，pゲイン
   int8_t dir1 = (targetCount1 > count1) ? 1 : -1;//タイヤ1が前に進むべきなら1，後ろに進むべきなら-1にする
   int8_t dir2 = (targetCount2 > count2) ? 1 : -1;//タイヤ2が前に進むべきなら1，後ろに進むべきなら-1にする
-  MoveMotor(1, constrain(dir1 * 20 + kp*(targetCount1 - count1),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
-  MoveMotor(2, constrain(dir2 * 20 + kp*(targetCount2 - count2),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
+  MoveMotor(1, constrain(dir1 * 40 + kp*(targetCount1 - count1),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
+  MoveMotor(2, constrain(dir2 * 40 + kp*(targetCount2 - count2),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   
   if (count1 == targetCount1 && count2 == targetCount2) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
     return true;
@@ -189,6 +191,7 @@ void setup() {
   servo1.attach(servo1_pin, 500, 2400);
   servo2.attach(servo2_pin, 500, 2400);
   Serial.begin(9600);
+  servo2.write(0);
 }
 
 void loop() {
@@ -212,7 +215,7 @@ void loop() {
     client.stop();  //接続が切れてたらクライアントを終了
     return;
   }
-  Serial.print(count1);Serial.print(" ");Serial.println(count2);
+  // Serial.print(count1);Serial.print(" ");Serial.println(count2);
   if(isAutoMode == true){
     if (client.available() > 0) {//まずクライアントからの入力をチェック
       c = client.read();
@@ -323,7 +326,7 @@ void loop() {
     //     isAutoMode = false;
     //     break;
     // }
-    switch (stage) { //モーターの出力を決める
+    switch (stage) {
       case Push2Cups:
       {
         if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
@@ -347,6 +350,7 @@ void loop() {
       }
       
       case RotateRight:
+      {
         // if(autoMove(-107,-147,2)){
         //   stage = CatchCup1;
         // }
@@ -356,29 +360,30 @@ void loop() {
         //   autoMove(count1Target, count2Target, 2);
         // }
         if(isRotateRight){
-          if(autoMove(-110, -110, 2)){
+          if(autoMove(-107, -147, 2)){
             isRotateRight = false;
           }
         }else{
-          if(autoMove(-127, -127, 2)){
+          if(autoMove(-147, -107, 2)){
             isRotateRight = true;
           }
         }
-
-        if(getDistance() < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
+        float distance = getDistance();
+        if(0 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
           stage = CatchCup1;
         }
 
         sprintf(message, "roR");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
+      }
 
       case CatchCup1:
-        servo2.write(0);//下げる
+        servo1.write(0);//下げる
         delay(500);//0.5s待つ
-        servo1.write(100);//掴む
+        servo2.write(50);//掴む
         delay(500);//0.5s待つ
-        servo2.write(100);//上げる
+        servo1.write(100);//上げる
         delay(500);//0.5s待つ
         stage = CarryCup1;
         break;
@@ -387,15 +392,15 @@ void loop() {
         if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
           stage = PutCup1;
         }
-        sprintf(message, "car");
+        sprintf(message, "cat");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
         break;
       
       case PutCup1:
-        servo2.write(0);//下げる
+        servo1.write(0);//下げる
         delay(500);//0.5s待つ
-        servo1.write(0);//離す
+        servo2.write(0);//離す
         delay(500);//0.5s待つ
         stage = RotateLeft;
         break;
@@ -404,7 +409,7 @@ void loop() {
         if(autoMove(-147,-107,2)){
           stage = CatchCup2;
         }
-        sprintf(message, "roL");
+        sprintf(message, "put");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
