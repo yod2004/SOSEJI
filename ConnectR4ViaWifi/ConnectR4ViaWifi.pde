@@ -70,3 +70,14 @@ void keyPressed() {
     fill(#ffffff);
     text(key, 10, 10);      
 }
+
+void keyReleased() {
+  // 指が離れたら、停止コマンド（Arduino側でdefault処理される文字、例えば'.'）を送る
+  client.write('.'); 
+
+  // 画面表示も更新（「STOP」や「.」などを表示するとわかりやすい）
+  fill(0); 
+  rect(0,0,200,100);
+  fill(#ffffff);
+  text("STOP", 10, 10); 
+}

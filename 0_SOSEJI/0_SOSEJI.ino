@@ -52,6 +52,7 @@ int8_t torque2 = 0;//128~127
 volatile int count1 = 0;//タイヤ1のエンコーダーのカウント
 volatile int count2 = 0;//タイヤ2のエンコーダーのカウント
 bool isAutoMode = false;//オートモードかどうか
+bool isRotateRight = false;//stage:RotateRightで使う変数
 
 // Communication setup
 char c = '.';
@@ -71,20 +72,20 @@ enum STAGE{//自立制御時の段階を設定
 };
 STAGE stage = Push2Cups;
 
-enum STAGE_MID{//自律制御時の段階を設定(中間競技用)
-  rotL,
-  back15,
-  rotR,
-  back60,
-  go60,
-  rotR2,
-  back30,
-  rotL2,
-  back60_2,
-  go10,
-  returnManual
-};
-STAGE_MID stageMid = rotL;
+// enum STAGE_MID{//自律制御時の段階を設定(中間競技用)
+//   rotL,
+//   back15,
+//   rotR,
+//   back60,
+//   go60,
+//   rotR2,
+//   back30,
+//   rotL2,
+//   back60_2,
+//   go10,
+//   returnManual
+// };
+// STAGE_MID stageMid = rotL;
 
 //モーターを動かす関数 idとトルクを指定できる
 void MoveMotor(int id,int8_t torque){//torqueは-127~127の範囲で送られてくる.
@@ -222,95 +223,204 @@ void loop() {
         sprintf(message, "Manual"); // 手動モードになったことを表示
         LED_print(0, 1, message, NO_SCROLL);
         stage = ReturnManual;
-        stageMid = returnManual;
+        // stageMid = returnManual;
       }else if(c == 'U'){
         value = analogRead(thermister);
         client.write(highByte(value)); //上位バイト
         client.write(lowByte(value));  //下位バイト
       }
     }
-    switch(stageMid){//stageMidの状態によって場合分けをする
-      case rotL://もしstageMidがrotLだったら実行
-        if(autoMove(-20,20,2)){//エンコーダーのカウントが-20,20になるように司令を送る．　目標を達成したらif文の中に入る
-          stageMid = back15;//stageMidを次の段階に進める．
+    // switch(stageMid){//stageMidの状態によって場合分けをする
+    //   case rotL://もしstageMidがrotLだったら実行
+    //     if(autoMove(-20,20,2)){//エンコーダーのカウントが-20,20になるように司令を送る．　目標を達成したらif文の中に入る
+    //       stageMid = back15;//stageMidを次の段階に進める．
+    //     }
+    //     sprintf(message, "rL");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+      
+    //   case back15://もしstageMidがback15だったら実行
+    //     if(autoMove(-58.0, -18.0,2)){
+    //       stageMid = rotR;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case rotR://もしstageMidがrotRだったら実行
+    //     if(autoMove(-38.0, -38.0,2)){
+    //       stageMid = back60;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+      
+    //   case back60:
+    //     if(autoMove(-215.2, -215.2,2)){
+    //       stageMid = go60;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case go60:
+    //     if(autoMove(-38.0, -38.0,2)){
+    //       stageMid = rotR2;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+      
+    //   case rotR2:
+    //     if(autoMove(-18.0, -58.0,2)){
+    //       stageMid = back30;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+      
+    //   case back30:
+    //     if(autoMove(-106.6, -146.6,2)){
+    //       stageMid = rotL2;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case rotL2:
+    //     if(autoMove(-131.6, -121.6,2)){
+    //       stageMid = back60_2;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case back60_2:
+    //     if(autoMove(-308.8, -298.8,2)){
+    //       stageMid = go10;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case go10:
+    //     if(autoMove(-258.8, -248.8,2)){
+    //       stageMid = returnManual;
+    //     }
+    //     sprintf(message, "Push");
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   case returnManual:
+    //     isAutoMode = false;
+    //     sprintf(message, "Man");
+    //     MoveMotor(1,0);
+    //     MoveMotor(2,0);
+    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+    //     break;
+
+    //   default:
+    //     isAutoMode = false;
+    //     break;
+    // }
+    switch (stage) { //モーターの出力を決める
+      case Push2Cups:
+      {
+        if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = Back;
         }
-        sprintf(message, "rL");
+        sprintf(message, "Push");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+        break;
+      }
+
+      case Back:
+      {
+        if(autoMove(-127,-127,2)){
+          isRotateRight = true;//次の段階の最初で右回転するように設定
+          stage = RotateRight;
+        }
+        sprintf(message, "Back");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      }
+      
+      case RotateRight:
+        // if(autoMove(-107,-147,2)){
+        //   stage = CatchCup1;
+        // }
+        // while(getDistance > 10 && (count1 < -110 && count2 < -110)){//対物距離が10cm以上でかつ，回転しすぎていなければ実行する
+        //   int count1Target = count1 -= 5;
+        //   int count2Target = count2 -= 5;
+        //   autoMove(count1Target, count2Target, 2);
+        // }
+        if(isRotateRight){
+          if(autoMove(-110, -110, 2)){
+            isRotateRight = false;
+          }
+        }else{
+          if(autoMove(-127, -127, 2)){
+            isRotateRight = true;
+          }
+        }
+
+        if(getDistance() < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
+          stage = CatchCup1;
+        }
+
+        sprintf(message, "roR");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+
+      case CatchCup1:
+        servo2.write(0);//下げる
+        delay(500);//0.5s待つ
+        servo1.write(100);//掴む
+        delay(500);//0.5s待つ
+        servo2.write(100);//上げる
+        delay(500);//0.5s待つ
+        stage = CarryCup1;
+        break;
+
+      case CarryCup1://できれば回転のみで運ぶ
+        if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = PutCup1;
+        }
+        sprintf(message, "car");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+        break;
+      
+      case PutCup1:
+        servo2.write(0);//下げる
+        delay(500);//0.5s待つ
+        servo1.write(0);//離す
+        delay(500);//0.5s待つ
+        stage = RotateLeft;
+        break;
+      
+      case RotateLeft:
+        if(autoMove(-147,-107,2)){
+          stage = CatchCup2;
+        }
+        sprintf(message, "roL");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
-      case back15://もしstageMidがback15だったら実行
-        if(autoMove(-58.0, -18.0,2)){
-          stageMid = rotR;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case rotR://もしstageMidがrotRだったら実行
-        if(autoMove(-38.0, -38.0,2)){
-          stageMid = back60;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+      case CatchCup2:
+        stage = CarryCup2;
         break;
       
-      case back60:
-        if(autoMove(-215.2, -215.2,2)){
-          stageMid = go60;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case go60:
-        if(autoMove(-38.0, -38.0,2)){
-          stageMid = rotR2;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+      case CarryCup2:
+        stage = PutCup2;
         break;
       
-      case rotR2:
-        if(autoMove(-18.0, -58.0,2)){
-          stageMid = back30;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+      case PutCup2:
+        stage = ReturnManual;
         break;
       
-      case back30:
-        if(autoMove(-106.6, -146.6,2)){
-          stageMid = rotL2;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case rotL2:
-        if(autoMove(-131.6, -121.6,2)){
-          stageMid = back60_2;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case back60_2:
-        if(autoMove(-308.8, -298.8,2)){
-          stageMid = go10;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case go10:
-        if(autoMove(-258.8, -248.8,2)){
-          stageMid = returnManual;
-        }
-        sprintf(message, "Push");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        break;
-
-      case returnManual:
+      case ReturnManual:
         isAutoMode = false;
         sprintf(message, "Man");
         MoveMotor(1,0);
@@ -322,106 +432,7 @@ void loop() {
         isAutoMode = false;
         break;
     }
-      /*
-      switch (stage) { //モーターの出力を決める
-        case Push2Cups:
-        {
-          // MoveMotor(1, constrain(-20 + 2*(-153 - count1),-127,127)); 
-          // MoveMotor(2, constrain(-20 + 2*(-153 - count2),-127,127));
-          
-          // if (count1 < -153 && count2 < -153) {
-          //   stage = Back;
-          // }
-          if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
-            stage = Back;
-          }
-          sprintf(message, "Push");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
-          break;
-        }
-
-        case Back:
-        {
-          // MoveMotor(1, constrain(20 + 2*(-127 - count1),-127,127));
-          // MoveMotor(2, constrain(20 + 2*(-127 - count2),-127,127));
-          
-          // if (count1 > -127 && count2 > -127) {
-          //   stage = RotateRight;
-          // }
-          if(autoMove(-127,-127,2)){
-            stage = RotateRight;
-          }
-          sprintf(message, "Back");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        }
-        
-        case RotateRight:
-          // MoveMotor(1, constrain(20 + 2*(-107 - count1),-127,127));
-          // MoveMotor(2, constrain(-20 + 2*(-147 - count2),-127,127));
-          // if(count1 > -107 && count2 < -147){
-          //   stage = CatchCup1;
-          // }
-          if(autoMove(-107,-147,2)){
-            stage = CatchCup1;
-          }
-          sprintf(message, "RoR");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-
-        case CatchCup1:
-          stage = CarryCup1; 
-          break;
-        
-        case CarryCup1:
-          stage = PutCup1;
-          break;
-        
-        case PutCup1:
-          stage = RotateLeft;
-          break;
-        
-        case RotateLeft:
-          // MoveMotor(1,constrain(-20 + 2*(-147 - count1), -127, 127));
-          // MoveMotor(2,constrain(20 + 2*(-107 - count2), -127, 127));
-          // if(count1 < -147 && count2 > -107){
-          //   stage = CatchCup2;
-          // }
-          if(autoMove(-147,-107,2)){
-            stage = CatchCup2;
-          }
-          sprintf(message, "RoL");
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-        
-        case CatchCup2:
-          stage = CarryCup2;
-          break;
-        
-        case CarryCup2:
-          stage = PutCup2;
-          break;
-        
-        case PutCup2:
-          stage = ReturnManual;
-          break;
-        
-        case ReturnManual:
-          isAutoMode = false;
-          sprintf(message, "Man");
-          MoveMotor(1,0);
-          MoveMotor(2,0);
-          LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-          break;
-
-        default:
-          isAutoMode = false;
-          break;
-      }
-      */
-    // }
-    
   }else{//手動モード
     if (client.available() <= 0) {
       return;  // データが来なかったらなにもしない
@@ -518,7 +529,7 @@ void loop() {
       case 't':
         isAutoMode = true;
         stage = Push2Cups;
-        stageMid = rotL;
+        // stageMid = rotL;
         torque1 = 0;
         torque2 = 0;
         count1 = 0;
