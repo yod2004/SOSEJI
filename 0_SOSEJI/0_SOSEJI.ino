@@ -505,14 +505,14 @@ void loop() {
         LED_print(0, 1, message, NO_SCROLL);  //受け取った文字をLEDに表示
         break;
 
-      case 'k'://アームを開く
-        servo2.write(180);
+      case 'j'://アームを開く
+        servo2.write(0);
         sprintf(message, "open");
         LED_print(0, 1, message, NO_SCROLL);  //受け取った文字をLEDに表示
         break;
 
-      case 'j'://アームを閉じる
-        servo2.write(0);
+      case 'k'://アームを閉じる
+        servo2.write(50);
         sprintf(message, "close");
         LED_print(0, 1, message, NO_SCROLL);  //受け取った文字をLEDに表示
         break;
