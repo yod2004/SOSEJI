@@ -116,6 +116,32 @@ void MoveMotor(int id,int8_t torque){//torqueは-127~127の範囲で送られて
   }
 }
 
+float getDistance(){
+  // トリガーを初期化（LOWにする）
+  digitalWrite(trig, LOW);
+  delayMicroseconds(2);
+
+  // 10マイクロ秒のパルスを出力して超音波を発射
+  digitalWrite(trig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trig, LOW);
+
+  // echoピンがHIGHになっている時間を計測（単位：マイクロ秒）
+  // 第3引数はタイムアウト設定（ここでは30ms = 約5mまで）
+  unsigned long duration = pulseIn(echo, HIGH, 100);
+
+  // 計測できなかった場合（タイムアウト時）は -1 を返すなどの処理
+  if (duration == 0) {
+    return -1.0; 
+  }
+
+  // 距離を計算
+  // 音速 340m/s = 0.034cm/us
+  // 往復なので2で割る: 0.034 / 2 = 0.017
+  float distance = duration * 0.017;
+  return distance;
+}
+
 void _1_CHANGE(){//エンコーダー1が変わったときに実行される関数
   if(torque1 > 0){
     count1 ++;//現在のモーター1のトルクが正ならcount1を1増やす
