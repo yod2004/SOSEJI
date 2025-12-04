@@ -134,7 +134,7 @@ float getDistance(){
   // 計測できなかった場合（タイムアウト時）は -1 を返すなどの処理
   if (duration == 0) {
     Serial.println("time out");
-    return -1.0; 
+    return -1;
   }
 
   // 距離を計算
@@ -233,99 +233,6 @@ void loop() {
         client.write(lowByte(value));  //下位バイト
       }
     }
-    // switch(stageMid){//stageMidの状態によって場合分けをする
-    //   case rotL://もしstageMidがrotLだったら実行
-    //     if(autoMove(-20,20,2)){//エンコーダーのカウントが-20,20になるように司令を送る．　目標を達成したらif文の中に入る
-    //       stageMid = back15;//stageMidを次の段階に進める．
-    //     }
-    //     sprintf(message, "rL");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-      
-    //   case back15://もしstageMidがback15だったら実行
-    //     if(autoMove(-58.0, -18.0,2)){
-    //       stageMid = rotR;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case rotR://もしstageMidがrotRだったら実行
-    //     if(autoMove(-38.0, -38.0,2)){
-    //       stageMid = back60;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-      
-    //   case back60:
-    //     if(autoMove(-215.2, -215.2,2)){
-    //       stageMid = go60;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case go60:
-    //     if(autoMove(-38.0, -38.0,2)){
-    //       stageMid = rotR2;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-      
-    //   case rotR2:
-    //     if(autoMove(-18.0, -58.0,2)){
-    //       stageMid = back30;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-      
-    //   case back30:
-    //     if(autoMove(-106.6, -146.6,2)){
-    //       stageMid = rotL2;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case rotL2:
-    //     if(autoMove(-131.6, -121.6,2)){
-    //       stageMid = back60_2;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case back60_2:
-    //     if(autoMove(-308.8, -298.8,2)){
-    //       stageMid = go10;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case go10:
-    //     if(autoMove(-258.8, -248.8,2)){
-    //       stageMid = returnManual;
-    //     }
-    //     sprintf(message, "Push");
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   case returnManual:
-    //     isAutoMode = false;
-    //     sprintf(message, "Man");
-    //     MoveMotor(1,0);
-    //     MoveMotor(2,0);
-    //     LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-    //     break;
-
-    //   default:
-    //     isAutoMode = false;
-    //     break;
-    // }
     switch (stage) {
       case Push2Cups:
       {
@@ -369,7 +276,7 @@ void loop() {
           }
         }
         float distance = getDistance();
-        if(0 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
+        if(3 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
           stage = CatchCup1;
         }
 
@@ -379,6 +286,8 @@ void loop() {
       }
 
       case CatchCup1:
+        sprintf(message, "ca1");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         servo1.write(0);//下げる
         delay(500);//0.5s待つ
         servo2.write(50);//掴む
@@ -392,7 +301,7 @@ void loop() {
         if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
           stage = PutCup1;
         }
-        sprintf(message, "cat");
+        sprintf(message, "car");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
         break;
@@ -403,34 +312,44 @@ void loop() {
         servo2.write(0);//離す
         delay(500);//0.5s待つ
         stage = RotateLeft;
+        sprintf(message, "pu1");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case RotateLeft:
         if(autoMove(-147,-107,2)){
           stage = CatchCup2;
         }
-        sprintf(message, "put");
+        sprintf(message, "roL");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case CatchCup2:
         stage = CarryCup2;
+        sprintf(message, "ca2");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case CarryCup2:
         stage = PutCup2;
+        sprintf(message, "car");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case PutCup2:
         stage = ReturnManual;
+        sprintf(message, "pu2");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case ReturnManual:
         isAutoMode = false;
-        sprintf(message, "Man");
         MoveMotor(1,0);
         MoveMotor(2,0);
+
+        sprintf(message, "Man");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        
         break;
 
       default:
