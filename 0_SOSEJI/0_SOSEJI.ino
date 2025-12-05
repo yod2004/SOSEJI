@@ -68,6 +68,8 @@ enum STAGE{//自立制御時の段階を設定
   CatchCup2,//Cup2をつかんで持ち上げる
   CarryCup2,//Cup2を右テーブルまで運ぶ
   PutCup2,//Cup2を右テーブルに置く
+  RotateCenter,//まっすぐを向く
+  Return,//初期位置に戻る
   ReturnManual
 };
 STAGE stage = Push2Cups;
@@ -247,7 +249,7 @@ void loop() {
 
       case Back:
       {
-        if(autoMove(-127,-127,2)){
+        if(autoMove(-153,-153,2)){
           isRotateRight = true;//次の段階の最初で右回転するように設定
           stage = RotateRight;
         }
@@ -267,11 +269,11 @@ void loop() {
         //   autoMove(count1Target, count2Target, 2);
         // }
         if(isRotateRight){
-          if(autoMove(-107, -147, 2)){
+          if(autoMove(-143+10, -162-10, 2)){
             isRotateRight = false;
           }
         }else{
-          if(autoMove(-147, -107, 2)){
+          if(autoMove(-143 - 10, -162+10, 2)){
             isRotateRight = true;
           }
         }
@@ -286,19 +288,21 @@ void loop() {
       }
 
       case CatchCup1:
+        MoveMotor(0,0);
+        MoveMotor(1,0);
         sprintf(message, "ca1");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         servo1.write(0);//下げる
-        delay(500);//0.5s待つ
+        delay(1000);//1s待つ
         servo2.write(50);//掴む
-        delay(500);//0.5s待つ
+        delay(1000);//1s待つ
         servo1.write(100);//上げる
-        delay(500);//0.5s待つ
+        delay(1000);//1s待つ
         stage = CarryCup1;
         break;
 
       case CarryCup1://できれば回転のみで運ぶ
-        if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
+        if(autoMove(-131,-175,2)){//カウント1の目標，カウント2の目標，pゲイン
           stage = PutCup1;
         }
         sprintf(message, "car");
@@ -307,41 +311,90 @@ void loop() {
         break;
       
       case PutCup1:
+        MoveMotor(0,0);
+        MoveMotor(1,0);
         servo1.write(0);//下げる
-        delay(500);//0.5s待つ
+        delay(1000);//1s待つ
         servo2.write(0);//離す
-        delay(500);//0.5s待つ
+        delay(1000);//1s待つ
         stage = RotateLeft;
         sprintf(message, "pu1");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        isRotateRight = false;
         break;
       
-      case RotateLeft:
-        if(autoMove(-147,-107,2)){
+      case RotateLeft:{
+        // if(autoMove(-163,-143,2)){
+        //   stage = CatchCup2;
+        // }
+        if(!isRotateRight){//左に回るモード
+          if(autoMove(-163-10, -143+10, 2)){
+            isRotateRight = true;//右に回るモードにする
+          }
+        }else{//右に回るモード
+          if(autoMove(-163+10, -143-10, 2)){
+            isRotateRight = false;//左に回るモードにする
+          }
+        }
+        float distance = getDistance();
+        if(3 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
           stage = CatchCup2;
         }
         sprintf(message, "roL");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
+      }
       
       case CatchCup2:
-        stage = CarryCup2;
         sprintf(message, "ca2");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        MoveMotor(0,0);
+        MoveMotor(1,0);
+        servo1.write(0);//下げる
+        delay(1000);//1s待つ
+        servo2.write(50);//掴む
+        delay(1000);//1s待つ
+        servo1.write(100);//上げる
+        delay(1000);//1s待つ
+        stage = CarryCup2;
         break;
       
       case CarryCup2:
-        stage = PutCup2;
+        if(autoMove(-175,-131,2)){
+          stage = PutCup2;
+        }
         sprintf(message, "car");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case PutCup2:
-        stage = ReturnManual;
         sprintf(message, "pu2");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        MoveMotor(0,0);
+        MoveMotor(1,0);
+        servo1.write(0);//下げる
+        delay(1000);//1s待つ
+        servo2.write(0);//離す
+        delay(1000);//1s待つ
+        stage = RotateCenter;
+        break;
+
+      case RotateCenter://まっすぐを向く
+        if(autoMove(-153,-153,2)){
+          stage = Return;
+        }
+        sprintf(message, "roC");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
+      case Return://初期位置に戻る
+        if(autoMove(0,0,2)){
+          stage = ReturnManual;
+        }
+        sprintf(message, "ret");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+
       case ReturnManual:
         isAutoMode = false;
         MoveMotor(1,0);
