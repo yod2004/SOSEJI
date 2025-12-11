@@ -147,6 +147,13 @@ float getDistance(){
   return distance;
 }
 
+float getTempC(){
+  int tempRending = analogRead(thermister);
+  double tempK = log(10000.0 * ((1024.0/tempRending-1)));
+  tempK = 1/(0.001129148 + (0.000234125 + (0.0000000876741 * tempK * tempK)) * tempK);
+  return tempK - 273.15;
+}
+
 void _1_CHANGE(){//エンコーダー1が変わったときに実行される関数
   if(torque1 > 0){
     count1 ++;//現在のモーター1のトルクが正ならcount1を1増やす
@@ -198,7 +205,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  int value;
+  uint16_t value;
 
   // アクセスポイントに他のデバイスがつながるのを待つ
   if (WiFi.status() != WL_AP_CONNECTED) {
@@ -230,7 +237,7 @@ void loop() {
         stage = ReturnManual;
         // stageMid = returnManual;
       }else if(c == 'U'){
-        value = analogRead(thermister);
+        value = uint16_t(getTempC());
         client.write(highByte(value)); //上位バイト
         client.write(lowByte(value));  //下位バイト
       }
@@ -239,9 +246,10 @@ void loop() {
       case Push2Cups:
       {
         if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
-          stage = Back;
+          isRotateRight = true;//次の段階の最初で右回転するように設定
+          stage = RotateRight;
         }
-        sprintf(message, "Push");
+        sprintf(message, "PUS");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
         break;
@@ -253,7 +261,7 @@ void loop() {
           isRotateRight = true;//次の段階の最初で右回転するように設定
           stage = RotateRight;
         }
-        sprintf(message, "Back");
+        sprintf(message, "BAC");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       }
@@ -282,7 +290,7 @@ void loop() {
           stage = CatchCup1;
         }
 
-        sprintf(message, "roR");
+        sprintf(message, "FI1");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       }
@@ -290,7 +298,7 @@ void loop() {
       case CatchCup1:
         MoveMotor(0,0);
         MoveMotor(1,0);
-        sprintf(message, "ca1");
+        sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         servo1.write(0);//下げる
         delay(1000);//1s待つ
@@ -305,7 +313,7 @@ void loop() {
         if(autoMove(-131,-175,2)){//カウント1の目標，カウント2の目標，pゲイン
           stage = PutCup1;
         }
-        sprintf(message, "car");
+        sprintf(message, "CAR");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
         break;
@@ -318,7 +326,7 @@ void loop() {
         servo2.write(0);//離す
         delay(1000);//1s待つ
         stage = RotateLeft;
-        sprintf(message, "pu1");
+        sprintf(message, "PUT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         isRotateRight = false;
         break;
@@ -344,9 +352,9 @@ void loop() {
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       }
-      
+
       case CatchCup2:
-        sprintf(message, "ca2");
+        sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         MoveMotor(0,0);
         MoveMotor(1,0);
@@ -363,12 +371,12 @@ void loop() {
         if(autoMove(-175,-131,2)){
           stage = PutCup2;
         }
-        sprintf(message, "car");
+        sprintf(message, "CAR");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       
       case PutCup2:
-        sprintf(message, "pu2");
+        sprintf(message, "PUT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         MoveMotor(0,0);
         MoveMotor(1,0);
@@ -391,7 +399,7 @@ void loop() {
         if(autoMove(0,0,2)){
           stage = ReturnManual;
         }
-        sprintf(message, "ret");
+        sprintf(message, "RET");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
 
@@ -495,7 +503,7 @@ void loop() {
         break;
 
       case 'U'://温度センサ取得  
-        value = analogRead(thermister);
+        value = uint16_t(getTempC());
         client.write(highByte(value)); //上位バイト
         client.write(lowByte(value));  //下位バイト
         break;
