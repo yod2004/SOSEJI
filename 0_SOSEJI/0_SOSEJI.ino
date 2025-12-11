@@ -296,10 +296,10 @@ void loop() {
       }
 
       case CatchCup1:
-        MoveMotor(0,0);
-        MoveMotor(1,0);
         sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        MoveMotor(1,0);
+        MoveMotor(2,0);
         servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(50);//掴む
@@ -319,15 +319,17 @@ void loop() {
         break;
       
       case PutCup1:
-        MoveMotor(0,0);
+        sprintf(message, "PUT");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         MoveMotor(1,0);
+        MoveMotor(2,0);
         servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(0);//離す
         delay(1000);//1s待つ
+        servo1.write(100);//上げる
+        delay(1000);//1s待つ
         stage = RotateLeft;
-        sprintf(message, "PUT");
-        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         isRotateRight = false;
         break;
       
@@ -348,7 +350,7 @@ void loop() {
         if(3 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
           stage = CatchCup2;
         }
-        sprintf(message, "roL");
+        sprintf(message, "FI2");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       }
@@ -356,8 +358,8 @@ void loop() {
       case CatchCup2:
         sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        MoveMotor(0,0);
         MoveMotor(1,0);
+        MoveMotor(2,0);
         servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(50);//掴む
@@ -378,11 +380,13 @@ void loop() {
       case PutCup2:
         sprintf(message, "PUT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        MoveMotor(0,0);
         MoveMotor(1,0);
+        MoveMotor(2,0);
         servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(0);//離す
+        delay(1000);//1s待つ
+        servo1.write(100);//上げる
         delay(1000);//1s待つ
         stage = RotateCenter;
         break;
