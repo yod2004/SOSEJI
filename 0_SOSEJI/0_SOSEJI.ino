@@ -28,8 +28,8 @@ int status = WL_IDLE_STATUS;
 WiFiServer server(PORT);  //Arduino上のサーバの設定
 
 //サーボの準備
-Servo servo1;
-Servo servo2;
+Servo servo1;//上げ下げ
+Servo servo2;//掴む離す
 
 //ピン設定
 int ain1 = 2;
@@ -135,7 +135,7 @@ float getDistance(){
 
   // 計測できなかった場合（タイムアウト時）は -1 を返すなどの処理
   if (duration == 0) {
-    Serial.println("time out");
+    // Serial.println("time out");
     return -1;
   }
 
@@ -143,7 +143,7 @@ float getDistance(){
   // 音速 340m/s = 0.034cm/us
   // 往復なので2で割る: 0.034 / 2 = 0.017
   float distance = duration * 0.017;
-  Serial.println(distance);
+  // Serial.println(distance);
   return distance;
 }
 
@@ -199,7 +199,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(enc2), _2_CHANGE, CHANGE);
   servo1.attach(servo1_pin, 500, 2400);
   servo2.attach(servo2_pin, 500, 2400);
-  Serial.begin(9600);
+  // Serial.begin(9600);
   servo2.write(0);
 }
 
@@ -300,11 +300,13 @@ void loop() {
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         MoveMotor(1,0);
         MoveMotor(2,0);
+        servo2.write(0);//開く
+        delay(1000);//1s待つ
         servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
-        servo1.write(100);//上げる
+        servo1.write(30);//上げる
         delay(1000);//1s待つ
         stage = CarryCup1;
         break;
@@ -327,7 +329,7 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(0);//離す
         delay(1000);//1s待つ
-        servo1.write(100);//上げる
+        servo1.write(30);//上げる
         delay(1000);//1s待つ
         stage = RotateLeft;
         isRotateRight = false;
@@ -364,7 +366,7 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
-        servo1.write(100);//上げる
+        servo1.write(30);//上げる
         delay(1000);//1s待つ
         stage = CarryCup2;
         break;
@@ -386,7 +388,7 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(0);//離す
         delay(1000);//1s待つ
-        servo1.write(100);//上げる
+        servo1.write(30);//上げる
         delay(1000);//1s待つ
         stage = RotateCenter;
         break;
@@ -483,7 +485,7 @@ void loop() {
 
 
       case 'p'://アームを上に
-        servo1.write(180);
+        servo1.write(30);
         sprintf(message, "up ");
         LED_print(0, 1, message, NO_SCROLL);  //受け取った文字をLEDに表示
         break;
