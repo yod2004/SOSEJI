@@ -8,6 +8,7 @@
 ・距離を読む
 
 11/06 DCモーター，サーボモーターをうごかせるようになった．
+12/12 ほぼできてる．あとは自律動作を調整していくだけ．
 */
 
 #include "WiFiS3.h"
@@ -54,6 +55,37 @@ volatile int count2 = 0;//タイヤ2のエンコーダーのカウント
 bool isAutoMode = false;//オートモードかどうか
 bool isRotateRight = false;//stage:RotateRightで使う変数
 
+float c1 = 0;
+float c2 = 0;
+float a = 24 / 94.2;
+float b = 1 / 4.5;
+float push_c1;
+float push_c2;
+float back_c1;
+float back_c2;
+float find1_c1;
+float find1_c2;
+float carry1_c1;
+float carry1_c2;
+float before1_c1;
+float before1_c2;
+float after1_c1;
+float after1_c2;
+float RotateCenter1_c1;
+float RotateCenter1_c2;
+float find2_c1;
+float find2_c2;
+float carry2_c1;
+float carry2_c2;
+float before2_c1;
+float before2_c2;
+float after2_c1;
+float after2_c2;
+float RotateCenter2_c1;
+float RotateCenter2_c2;
+float return_c1;
+float return_c2;
+
 // Communication setup
 char c = '.';
 
@@ -63,12 +95,17 @@ enum STAGE{//自立制御時の段階を設定
   RotateRight,//Cup1を見つけるまで右旋回
   CatchCup1,//Cup1をつかんで持ち上げる
   CarryCup1,//Cup1を左テーブルまで運ぶ
+  BeforePut1,//置く前に前に進む
   PutCup1,//Cup1をテーブルに置く．
+  AfterPut1,//置いた後に後ろに戻る
+  RotateCenter1,
   RotateLeft,//Cup2を見つけるまで左旋回
   CatchCup2,//Cup2をつかんで持ち上げる
   CarryCup2,//Cup2を右テーブルまで運ぶ
+  BeforePut2,//置く前に前に進む
   PutCup2,//Cup2を右テーブルに置く
-  RotateCenter,//まっすぐを向く
+  AfterPut2,//置いた後に後ろに戻る
+  RotateCenter2,//まっすぐを向く
   Return,//初期位置に戻る
   ReturnManual
 };
@@ -200,7 +237,59 @@ void setup() {
   servo1.attach(servo1_pin, 500, 2400);
   servo2.attach(servo2_pin, 500, 2400);
   // Serial.begin(9600);
+  servo1.write(90);
   servo2.write(0);
+
+  c1 -= 660*a;
+  c2 -= 660*a;
+  push_c1 = c1;
+  push_c2 = c2;
+  c1 += 45*b;
+  c2 -= 45*b;
+  find1_c1 = c1;
+  find1_c2 = c2;
+  c1 += 70*b;
+  c2 -= 70*b;
+  carry1_c1 = c1;
+  carry1_c2 = c2;
+  c1 += 30*a;
+  c2 += 30*a;
+  before1_c1 = c1;
+  before1_c2 = c2;
+  c1 -= 30*a;
+  c2 -= 30*a;
+  after1_c1 = c1;
+  after1_c2 = c2;
+  c1 -= 115*b;
+  c2 += 115*b;
+  RotateCenter1_c1 = c1;
+  RotateCenter1_c2 = c2;
+  c1 -= 45*b;
+  c2 += 45*b;
+  find2_c1 = c1;
+  find2_c2 = c2;
+  c1 -= 70*b;
+  c2 += 70*b;
+  carry2_c1 = c1;
+  carry2_c2 = c2;
+  c1 += 30*a;
+  c2 += 30*a;
+  before2_c1 = c1;
+  before2_c2 = c2;
+  c1 -= 30*a;
+  c2 -= 30*a;
+  after2_c1 = c1;
+  after2_c2 = c2;
+  c1 += 115*b;
+  c2 -= 115*b;
+  RotateCenter2_c1 = c1;
+  RotateCenter2_c2 = c2;
+  c1 += 660*a;
+  c2 += 660*a;
+  return_c1 = c1;
+  return_c2 = c2;
+  // Serial.print(push_c1);  Serial.println(push_c2);
+  // Serial.print(after2_c1);  Serial.println(after2_c2);
 }
 
 void loop() {
@@ -245,7 +334,7 @@ void loop() {
     switch (stage) {
       case Push2Cups:
       {
-        if(autoMove(-153,-153,2)){//カウント1の目標，カウント2の目標，pゲイン
+        if(autoMove(int(push_c1),int(push_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
           isRotateRight = true;//次の段階の最初で右回転するように設定
           stage = RotateRight;
         }
@@ -257,7 +346,7 @@ void loop() {
 
       case Back:
       {
-        if(autoMove(-153,-153,2)){
+        if(autoMove(int(back_c1),int(back_c2),2)){
           isRotateRight = true;//次の段階の最初で右回転するように設定
           stage = RotateRight;
         }
@@ -277,11 +366,11 @@ void loop() {
         //   autoMove(count1Target, count2Target, 2);
         // }
         if(isRotateRight){
-          if(autoMove(-143+10, -162-10, 2)){
+          if(autoMove(int(find1_c1)+10, int(find1_c2)-10, 2)){
             isRotateRight = false;
           }
         }else{
-          if(autoMove(-143 - 10, -162+10, 2)){
+          if(autoMove(int(find1_c1) - 10, int(find1_c2)+10, 2)){
             isRotateRight = true;
           }
         }
@@ -306,20 +395,29 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
-        servo1.write(30);//上げる
+        servo1.write(90);//上げる
         delay(1000);//1s待つ
         stage = CarryCup1;
         break;
 
       case CarryCup1://できれば回転のみで運ぶ
-        if(autoMove(-131,-175,2)){//カウント1の目標，カウント2の目標，pゲイン
-          stage = PutCup1;
+        if(autoMove(int(carry1_c1),int(carry1_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = BeforePut1;
         }
         sprintf(message, "CAR");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
 
         break;
       
+      case BeforePut1://置く前に前に進む
+        if(autoMove(int(before1_c1),int(before1_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = PutCup1;
+        }
+        sprintf(message, "Be1");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+        break;
+
       case PutCup1:
         sprintf(message, "PUT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
@@ -329,22 +427,41 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(0);//離す
         delay(1000);//1s待つ
-        servo1.write(30);//上げる
+        servo1.write(90);//上げる
         delay(1000);//1s待つ
-        stage = RotateLeft;
+        stage = AfterPut1;
         isRotateRight = false;
         break;
       
+      case AfterPut1://置いた後に後ろに戻る
+        if(autoMove(int(after1_c1),int(after1_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = RotateCenter1;
+        }
+        sprintf(message, "Af1");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+        break;
+
+      case RotateCenter1:
+      {
+        if(autoMove(int(RotateCenter1_c1),int(RotateCenter1_c2),2)){
+          stage = RotateLeft;
+        }
+        sprintf(message, "RoC");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        break;
+      }
+
       case RotateLeft:{
         // if(autoMove(-163,-143,2)){
         //   stage = CatchCup2;
         // }
         if(!isRotateRight){//左に回るモード
-          if(autoMove(-163-10, -143+10, 2)){
+          if(autoMove(int(find2_c1)-10, int(find2_c2)+10, 2)){
             isRotateRight = true;//右に回るモードにする
           }
         }else{//右に回るモード
-          if(autoMove(-163+10, -143-10, 2)){
+          if(autoMove(int(find2_c1)+10, int(find2_c2)-10, 2)){
             isRotateRight = false;//左に回るモードにする
           }
         }
@@ -366,19 +483,28 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
-        servo1.write(30);//上げる
+        servo1.write(90);//上げる
         delay(1000);//1s待つ
         stage = CarryCup2;
         break;
       
       case CarryCup2:
-        if(autoMove(-175,-131,2)){
-          stage = PutCup2;
+        if(autoMove(int(carry2_c1),int(carry2_c2),2)){
+          stage = BeforePut2;
         }
         sprintf(message, "CAR");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
-      
+
+      case BeforePut2://置く前に前に進む
+        if(autoMove(int(before2_c1),int(before2_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = PutCup2;
+        }
+        sprintf(message, "Be2");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+        break;
+
       case PutCup2:
         sprintf(message, "PUT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
@@ -388,13 +514,22 @@ void loop() {
         delay(1000);//1s待つ
         servo2.write(0);//離す
         delay(1000);//1s待つ
-        servo1.write(30);//上げる
+        servo1.write(90);//上げる
         delay(1000);//1s待つ
-        stage = RotateCenter;
+        stage = AfterPut2;
         break;
 
-      case RotateCenter://まっすぐを向く
-        if(autoMove(-153,-153,2)){
+      case AfterPut2://置いた後に後ろに戻る
+      if(autoMove(int(after2_c1),int(after2_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+        stage = RotateCenter2;
+      }
+      sprintf(message, "Af2");
+      LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
+      break;
+
+      case RotateCenter2://まっすぐを向く
+        if(autoMove(int(RotateCenter2_c1),int(RotateCenter2_c2),2)){
           stage = Return;
         }
         sprintf(message, "roC");
@@ -402,7 +537,7 @@ void loop() {
         break;
       
       case Return://初期位置に戻る
-        if(autoMove(0,0,2)){
+        if(autoMove(int(return_c1),int(return_c2),2)){
           stage = ReturnManual;
         }
         sprintf(message, "RET");
@@ -485,7 +620,7 @@ void loop() {
 
 
       case 'p'://アームを上に
-        servo1.write(30);
+        servo1.write(90);
         sprintf(message, "up ");
         LED_print(0, 1, message, NO_SCROLL);  //受け取った文字をLEDに表示
         break;
