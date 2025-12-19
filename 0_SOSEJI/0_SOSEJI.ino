@@ -85,6 +85,14 @@ float RotateCenter2_c1;
 float RotateCenter2_c2;
 float return_c1;
 float return_c2;
+int beforeCatch1_c1;
+int beforeCatch1_c2;
+int beforeCatch2_c1;
+int beforeCatch2_c2;
+bool isMovedBeforeCatch1;
+bool isMovedBeforeCatch2;
+float distanceMax = 5.0;
+float distanceMin = 4.5;
 
 // Communication setup
 char c = '.';
@@ -93,14 +101,18 @@ enum STAGE{//自立制御時の段階を設定
   Push2Cups,//中央2つのコップを押し出す
   Back,//戻る
   RotateRight,//Cup1を見つけるまで右旋回
+  BeforeCatch1,
   CatchCup1,//Cup1をつかんで持ち上げる
+  AfterCatch1,
   CarryCup1,//Cup1を左テーブルまで運ぶ
   BeforePut1,//置く前に前に進む
   PutCup1,//Cup1をテーブルに置く．
   AfterPut1,//置いた後に後ろに戻る
   RotateCenter1,
   RotateLeft,//Cup2を見つけるまで左旋回
+  BeforeCatch2,
   CatchCup2,//Cup2をつかんで持ち上げる
+  AfterCatch2,
   CarryCup2,//Cup2を右テーブルまで運ぶ
   BeforePut2,//置く前に前に進む
   PutCup2,//Cup2を右テーブルに置く
@@ -213,7 +225,7 @@ bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の�
   MoveMotor(1, constrain(dir1 * 40 + kp*(targetCount1 - count1),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   MoveMotor(2, constrain(dir2 * 40 + kp*(targetCount2 - count2),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   
-  if (count1 == targetCount1 && count2 == targetCount2) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
+  if ((abs(count1 - targetCount1)<=1) && (abs(count2 - targetCount2)<=1)) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
     return true;
   }else{
     return false;
@@ -236,10 +248,11 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(enc2), _2_CHANGE, CHANGE);
   servo1.attach(servo1_pin, 500, 2400);
   servo2.attach(servo2_pin, 500, 2400);
-  // Serial.begin(9600);
+  Serial.begin(9600);
   servo1.write(90);
   servo2.write(0);
-
+  c1 = 0;
+  c2 = 0;
   c1 -= 660*a;
   c2 -= 660*a;
   push_c1 = c1;
@@ -288,11 +301,12 @@ void setup() {
   c2 += 660*a;
   return_c1 = c1;
   return_c2 = c2;
-  // Serial.print(push_c1);  Serial.println(push_c2);
+  Serial.print(push_c1);  Serial.println(push_c2);
   // Serial.print(after2_c1);  Serial.println(after2_c2);
 }
 
 void loop() {
+  Serial.print(count1); Serial.print(" "); Serial.println(count2);
   // put your main code here, to run repeatedly:
   uint16_t value;
 
@@ -357,26 +371,35 @@ void loop() {
       
       case RotateRight:
       {
-        // if(autoMove(-107,-147,2)){
-        //   stage = CatchCup1;
-        // }
-        // while(getDistance > 10 && (count1 < -110 && count2 < -110)){//対物距離が10cm以上でかつ，回転しすぎていなければ実行する
-        //   int count1Target = count1 -= 5;
-        //   int count2Target = count2 -= 5;
-        //   autoMove(count1Target, count2Target, 2);
-        // }
         if(isRotateRight){
-          if(autoMove(int(find1_c1)+10, int(find1_c2)-10, 2)){
+          if(autoMove(int(find1_c1)+10, int(find1_c2)-10, 1)){
             isRotateRight = false;
           }
         }else{
-          if(autoMove(int(find1_c1) - 10, int(find1_c2)+10, 2)){
+          if(autoMove(int(find1_c1) - 10, int(find1_c2)+10, 1)){
             isRotateRight = true;
           }
         }
         float distance = getDistance();
-        if(3 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
+        if(distanceMin < distance && distance < distanceMax){//一定距離以内にものを確認したらそれを掴む段階に移る．
+          // delay(100);//0.1s待機
+          MoveMotor(1,0);
+          MoveMotor(2,0);
+          servo2.write(0);//開く
+          delay(1000);//1s待つ
+          servo1.write(0);//下げる
+          isMovedBeforeCatch1 = false;
           stage = CatchCup1;
+        }else if(distanceMax <= distance && distance < 15.0){//遠かったら近づくステージに移行
+          MoveMotor(1,0);
+          MoveMotor(2,0);
+          servo2.write(0);//開く
+          servo1.write(0);//下げる
+          delay(1000);//1s待つ
+          beforeCatch1_c1 = count1;
+          beforeCatch1_c2 = count2;
+          isMovedBeforeCatch1 = true;
+          stage = BeforeCatch1;
         }
 
         sprintf(message, "FI1");
@@ -384,20 +407,44 @@ void loop() {
         break;
       }
 
+      case BeforeCatch1:{
+        sprintf(message, "BEF");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        float distance = getDistance();
+        while(distance < distanceMin || distanceMax <= distance){
+          MoveMotor(1,50);
+          MoveMotor(2,50);
+          distance = getDistance();
+        }
+        MoveMotor(1,0);
+        MoveMotor(2,0);
+        stage = CatchCup1;
+        break;
+      }
+
+
       case CatchCup1:
         sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        MoveMotor(1,0);
-        MoveMotor(2,0);
-        servo2.write(0);//開く
-        delay(1000);//1s待つ
-        servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
         servo1.write(90);//上げる
         delay(1000);//1s待つ
-        stage = CarryCup1;
+        if(isMovedBeforeCatch1){
+          stage = AfterCatch1;
+        }else{
+          stage = CarryCup1;
+        }
+        break;
+
+      case AfterCatch1:
+        if(autoMove(int(beforeCatch1_c1),int(beforeCatch1_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = CarryCup1;
+        }
+        sprintf(message, "Aft");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
         break;
 
       case CarryCup1://できれば回転のみで運ぶ
@@ -457,35 +504,73 @@ void loop() {
         //   stage = CatchCup2;
         // }
         if(!isRotateRight){//左に回るモード
-          if(autoMove(int(find2_c1)-10, int(find2_c2)+10, 2)){
+          if(autoMove(int(find2_c1)-10, int(find2_c2)+10, 1)){
             isRotateRight = true;//右に回るモードにする
           }
         }else{//右に回るモード
-          if(autoMove(int(find2_c1)+10, int(find2_c2)-10, 2)){
+          if(autoMove(int(find2_c1)+10, int(find2_c2)-10, 1)){
             isRotateRight = false;//左に回るモードにする
           }
         }
         float distance = getDistance();
-        if(3 < distance && distance < 10.0){//一定距離以内にものを確認したらそれを掴む段階に移る．
+        if(distanceMin < distance && distance < distanceMax){//一定距離以内にものを確認したらそれを掴む段階に移る．
+          // delay(100);//0.1s待機
+          MoveMotor(1,0);
+          MoveMotor(2,0);
+          servo2.write(0);//開く
+          delay(1000);//1s待つ
+          servo1.write(0);//下げる
+          isMovedBeforeCatch2 = false;
           stage = CatchCup2;
+        }else if(distanceMax <= distance && distance < 15.0){//遠かったら近づくステージに移行
+          MoveMotor(1,0);
+          MoveMotor(2,0);
+          servo2.write(0);//開く
+          servo1.write(0);//下げる
+          delay(1000);//1s待つ
+          beforeCatch2_c1 = count1;
+          beforeCatch2_c2 = count2;
+          isMovedBeforeCatch2 = true;
+          stage = BeforeCatch2;
         }
         sprintf(message, "FI2");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
         break;
       }
 
+      case BeforeCatch2:{
+        sprintf(message, "BEF");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+        float distance = getDistance();
+        while(distance < distanceMin || distanceMax <= distance){
+          MoveMotor(1,50);
+          MoveMotor(2,50);
+          distance = getDistance();
+        }
+        MoveMotor(1,0);
+        MoveMotor(2,0);
+        stage = CatchCup2;
+        break;
+      }
+
       case CatchCup2:
         sprintf(message, "CAT");
         LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
-        MoveMotor(1,0);
-        MoveMotor(2,0);
-        servo1.write(0);//下げる
         delay(1000);//1s待つ
         servo2.write(50);//掴む
         delay(1000);//1s待つ
         servo1.write(90);//上げる
         delay(1000);//1s待つ
         stage = CarryCup2;
+        break;
+      
+      case AfterCatch2:
+        if(autoMove(int(beforeCatch2_c1),int(beforeCatch2_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+          stage = CarryCup2;
+        }
+        sprintf(message, "Aft");
+        LED_print(0, 1, message, NO_SCROLL); //受け取った文字をLEDに表示
+
         break;
       
       case CarryCup2:
