@@ -91,6 +91,7 @@ int beforeCatch2_c1;
 int beforeCatch2_c2;
 bool isMovedBeforeCatch1;
 bool isMovedBeforeCatch2;
+float findMax = 30;
 float distanceMax = 5.0;
 float distanceMin = 4.5;
 
@@ -206,7 +207,7 @@ float getTempC(){
 void _1_CHANGE(){//エンコーダー1が変わったときに実行される関数
   if(torque1 > 0){
     count1 ++;//現在のモーター1のトルクが正ならcount1を1増やす
-  }else{
+  }else if(torque1 < 0){
     count1 --;//現在のモーター1のトルクが負ならcount1を1減らす
   }
 }
@@ -214,7 +215,7 @@ void _1_CHANGE(){//エンコーダー1が変わったときに実行される関
 void _2_CHANGE(){//エンコーダー2が変わったときに実行される関数
   if(torque2 > 0){
     count2 ++;//現在のモーター2のトルクが正ならcount2を1増やす
-  }else{
+  }else if(torque2 < 0){
     count2 --;//現在のモーター2のトルクが負ならcount2を1減らす
   }
 }
@@ -225,7 +226,7 @@ bool autoMove(int targetCount1, int targetCount2, float kp){//カウント1の�
   MoveMotor(1, constrain(dir1 * 40 + kp*(targetCount1 - count1),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   MoveMotor(2, constrain(dir2 * 40 + kp*(targetCount2 - count2),-127,127));//差の2倍に20の下駄を履かせて出力する constrain関数でトルクを -127~127 の間に収める
   
-  if ((abs(count1 - targetCount1)<=1) && (abs(count2 - targetCount2)<=1)) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
+  if ((abs(count1 - targetCount1)<=2) && (abs(count2 - targetCount2)<=2)) {//現在のエンコーダーのカウントが目標値と一致したときのみtrueを返す.
     return true;
   }else{
     return false;
@@ -390,7 +391,7 @@ void loop() {
           servo1.write(0);//下げる
           isMovedBeforeCatch1 = false;
           stage = CatchCup1;
-        }else if(distanceMax <= distance && distance < 15.0){//遠かったら近づくステージに移行
+        }else if(distanceMax <= distance && distance < findMax){//遠かったら近づくステージに移行
           MoveMotor(1,0);
           MoveMotor(2,0);
           servo2.write(0);//開く
@@ -515,6 +516,9 @@ void loop() {
         float distance = getDistance();
         if(distanceMin < distance && distance < distanceMax){//一定距離以内にものを確認したらそれを掴む段階に移る．
           // delay(100);//0.1s待機
+          if(isRotateRight == false){
+            delay(500);
+          }
           MoveMotor(1,0);
           MoveMotor(2,0);
           servo2.write(0);//開く
@@ -522,7 +526,10 @@ void loop() {
           servo1.write(0);//下げる
           isMovedBeforeCatch2 = false;
           stage = CatchCup2;
-        }else if(distanceMax <= distance && distance < 15.0){//遠かったら近づくステージに移行
+        }else if(distanceMax <= distance && distance < findMax){//遠かったら近づくステージに移行
+          if(isRotateRight == false){
+            delay(500);
+          }
           MoveMotor(1,0);
           MoveMotor(2,0);
           servo2.write(0);//開く
