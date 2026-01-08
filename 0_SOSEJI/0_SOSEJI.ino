@@ -370,7 +370,7 @@ void loop() {
     switch (stage) {
       case Push2Cups:
       {
-        if(autoMove2(int(push_c1),int(push_c2),2)){//カウント1の目標，カウント2の目標，pゲイン
+        if(autoMove2(int(push_c1),int(push_c2),8)){//カウント1の目標，カウント2の目標，pゲイン
           isRotateRight = true;//次の段階の最初で右回転するように設定
           stage = RotateRight;
         }
@@ -394,11 +394,11 @@ void loop() {
       case RotateRight:
       {
         if(isRotateRight){
-          if(autoMove(int(find1_c1)+10, int(find1_c2)-10, 0.1)){
+          if(autoMove(int(find1_c1)+5, int(find1_c2)-5, 0.1)){
             isRotateRight = false;
           }
         }else{
-          if(autoMove(int(find1_c1) - 10, int(find1_c2)+10, 0.1)){
+          if(autoMove(int(find1_c1) - 5, int(find1_c2)+5, 0.1)){
             isRotateRight = true;
           }
         }
@@ -539,11 +539,11 @@ void loop() {
         //   stage = CatchCup2;
         // }
         if(!isRotateRight){//左に回るモード
-          if(autoMove(int(find2_c1)-10, int(find2_c2)+10, 0.1)){
+          if(autoMove(int(find2_c1)-5, int(find2_c2)+5, 0.1)){
             isRotateRight = true;//右に回るモードにする
           }
         }else{//右に回るモード
-          if(autoMove(int(find2_c1)+10, int(find2_c2)-10, 0.1)){
+          if(autoMove(int(find2_c1)+5, int(find2_c2)-5, 0.1)){
             isRotateRight = false;//左に回るモードにする
           }
         }
@@ -783,7 +783,7 @@ void loop() {
         break;
 
       case 'U'://温度センサ取得  
-        value = uint16_t(getDistance());
+        value = uint16_t(getTempC());
         client.write(highByte(value)); //上位バイト
         client.write(lowByte(value));  //下位バイト
         break;
